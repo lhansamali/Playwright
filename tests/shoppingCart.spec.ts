@@ -1,32 +1,36 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../tests/TestData/TestDataFixture';
+import { SigninPage } from './Pages/SigninPage';
+import { HomePage } from './Pages/HomePage';
+import { ProcessPayment } from './Pages/ProcessPayment';
 test.describe('Add items to Shopping Cart',()=>{
-    test.beforeEach('Login',async ({page})=>{
-        await page.goto('https://practicesoftwaretesting.com/auth/login');
-        await page.getByTestId('email').fill("customer@practicesoftwaretesting.com");
-        await page.getByTestId('password').fill("welcome01")
-        await page.getByTestId('login-submit').click();
-        await expect(page.getByTestId('nav-menu')).toContainText(' Jane Doe ');
+    test.beforeEach('signin', async ({ page,testData }) => {
+        const signinPage=new SigninPage(page);
+  
+          await signinPage.goto();
+          await signinPage.signin(testData.email,testData.password);
+          await expect(page.locator('[data-test="nav-menu"]')).toContainText('Jane Doe');
+          await expect(page.locator('[data-test="page-title"]')).toContainText('My account');
     });
     test('Buy Items',async ({page})=>{
-       await page.getByTestId('nav-home').click();
-       await page.getByTestId('search-query').fill("Claw Hammer");
-       await page.getByTestId('search-submit').click();
+       const homePage=new HomePage(page);
+
+       //Search the item in Home Page
+       await homePage.searchItems("Claw Hammer");
        await expect(page.getByTestId('search_completed').getByRole('link')).toHaveCount(3);
 
-       await page.locator('xpath=//div[@data-test="search_completed"]/a[2]').click();
-       await expect(page.getByTestId('product-name')).toContainText("Claw Hammer");
-       await page.getByText("Add to cart").click();
-       await page.getByTestId('nav-cart').click();
-       await expect(page.getByTestId('product-title')).toContainText("Claw Hammer");
+       //Select the item in Home Page
+       await homePage.selectItem(1);
+       await expect(page.getByTestId('product-name')).toHaveText("Claw Hammer");
+    
+       //Add the item to the Cart
+       await homePage.addToCart();
+       await expect(page.getByTestId('product-title')).toHaveText("Claw Hammer");
 
-       await page.getByRole('button',{name:"Proceed to checkout"}).click();
-       await page.getByRole('button',{name:"Proceed to checkout"}).click();
-       await page.getByTestId('state').fill("Eastern");
-       await page.getByTestId('postal_code').fill("1000");
-
-       await page.getByRole('button',{name:"Proceed to checkout"}).click();
-       await page.getByTestId('payment-method').selectOption('Cash on Delivery');
-       await page.getByTestId('finish').click();
+       //Process the Payment
+       const paymentPage=new ProcessPayment(page);
+       await paymentPage.fillBillingAddress("Test street 98","Vienea","Eastern","Italy","18393");
+       await paymentPage.selectCODPaymentMethod();
+       await paymentPage.confirmPayment();
        await expect(page.getByTestId('payment-success-message')).toContainText("Payment was successful");
     });
 })

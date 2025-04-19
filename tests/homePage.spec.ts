@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
-
+/**
+ * This is without using POM
+ */
 test.describe('Search Items',()=>{
     test.beforeEach('Login',async ({page})=>{
         await page.goto("https://practicesoftwaretesting.com/auth/login");
